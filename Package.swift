@@ -1,5 +1,6 @@
 // swift-tools-version: 6.4
 
+import CompilerPluginSupport
 import PackageDescription
 
 let package = Package(
@@ -15,13 +16,18 @@ let package = Package(
         .library(
             name: "Client",
             targets: ["Client"]
-        )
+        ),
+        .library(name: "Client Macro", targets: ["Client Macro"]),
+        .library(name: "Client Macro Core", targets: ["Client Macro Core"]),
     ],
     dependencies: [
         .package(
             url: "https://github.com/swift-atoms/swift-either.git",
             branch: "main"
         ),
+        .package(url: "https://github.com/swift-atoms/swift-operation.git", branch: "main"),
+        .package(url: "https://github.com/swift-compositions/swift-interface.git", branch: "main"),
+        .package(url: "https://github.com/swiftlang/swift-syntax.git", "603.0.2"..<"604.0.0"),
     ],
     targets: [
         .target(
@@ -35,6 +41,42 @@ let package = Package(
             dependencies: [
                 "Client",
                 .product(name: "Either", package: "swift-either"),
+            ]
+        ),
+        .target(
+            name: "Client Macro Core",
+            dependencies: [
+                .product(name: "Interface Macro Core", package: "swift-interface"),
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
+            ]
+        ),
+        .macro(
+            name: "Client Macro Plugin",
+            dependencies: [
+                "Client Macro Core",
+                .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
+            ]
+        ),
+        .target(
+            name: "Client Macro",
+            dependencies: [
+                "Client Macro Plugin",
+                "Client",
+                .product(name: "Either", package: "swift-either"),
+                .product(name: "Operation", package: "swift-operation"),
+            ]
+        ),
+        .testTarget(
+            name: "Client Macro Tests",
+            dependencies: [
+                "Client Macro",
+                "Client",
+                .product(name: "Either", package: "swift-either"),
+                .product(name: "Operation", package: "swift-operation"),
+                .product(name: "Interface Macro", package: "swift-interface"),
             ]
         ),
     ],
