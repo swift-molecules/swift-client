@@ -1,11 +1,12 @@
-public import SwiftSyntax
 public import Interface_Macro_Core
-import Product_Macro_Core
+public import Operation_Macro_Core
+public import Product_Macro_Core
+public import SwiftSyntax
 import SwiftSyntaxBuilder
 
-// A client is the interface's arrows lifted over an external failure: every operation takes the same
-// `Request` the interface is called with (its symbol's `Input`) and fails with `Either<External, Failure>`.
-// The names come from the interface's naming table; nothing is re-derived here.
+// A client is the interface's arrows lifted over an external failure: every operation takes the same Input the
+// interface is called with (its symbol's `Input`) and fails with `Either<External, Failure>`. The names come
+// from the operations' analysis; nothing is re-derived here.
 extension Client {
     public enum Derivation {
         public static func peers(of signature: Interface.Analysis) -> [DeclSyntax] {
@@ -15,28 +16,27 @@ extension Client {
 
         private static func client(of signature: Interface.Analysis, access: String) -> DeclSyntax {
             let owner = signature.owner.trimmedDescription
-            let operations = Interface.Derivation.operations(of: signature)
-            let storedArrows = operations.map { operation in
-                "    private let _\(operation.caseName): \(arrow(of: operation, owner: owner))"
+            let symbols = signature.symbols
+            let storedArrows = symbols.map { symbol in
+                "    private let _\(symbol.caseName): \(arrow(of: symbol, owner: owner))"
             }
             let storedChildren = signature.children.map { child in
                 "    \(access)let \(child.name.text): \(child.domain.trimmedDescription).Client<External>"
             }
-            let parameters = operations.map { operation in
-                "\(operation.caseName): \(arrow(of: operation, owner: owner))"
+            let parameters = symbols.map { symbol in
+                "\(symbol.caseName): \(arrow(of: symbol, owner: owner))"
             } + signature.children.map { child in
                 "\(child.name.text): \(child.domain.trimmedDescription).Client<External>"
             }
-            let assignments = operations.map { operation in
-                "        self._\(operation.caseName) = \(operation.caseName)"
+            let assignments = symbols.map { symbol in
+                "        self._\(symbol.caseName) = \(symbol.caseName)"
             } + signature.children.map { child in
                 "        self.\(child.name.text) = \(child.name.text)"
             }
-            let forwarding = operations.map { operation in
-                let coordinate = operation.coordinate
-                return """
-                    \(access)func \(operation.name)\(coordinate.declaration.signature.parameterClause.trimmedDescription) async throws(\(failure(of: operation))) -> \(operation.output) {
-                        try await self._\(operation.caseName)(\(operation.requestPath(owner: owner))(\(operation.construction)))
+            let forwarding = symbols.map { symbol in
+                """
+                    \(access)func \(symbol.signature.name.text)\(symbol.signature.declaration.signature.parameterClause.trimmedDescription) async throws(\(failure(of: symbol))) -> \(symbol.output.trimmedDescription) {
+                        try await self._\(symbol.caseName)(\(symbol.inputPath(owner: owner))(\(symbol.construction)))
                     }
                 """
             }
@@ -54,12 +54,12 @@ extension Client {
                 """)
         }
 
-        private static func failure(of operation: Interface.Derivation.Operation) -> String {
-            "Either<External, \(operation.coordinate.failure.trimmedDescription)>"
+        private static func failure(of symbol: Interface.Analysis.Symbol) -> String {
+            "Either<External, \(symbol.failure.trimmedDescription)>"
         }
 
-        private static func arrow(of operation: Interface.Derivation.Operation, owner: String) -> String {
-            "Client::Client<\(operation.requestPath(owner: owner)), \(operation.output), \(failure(of: operation))>"
+        private static func arrow(of symbol: Interface.Analysis.Symbol, owner: String) -> String {
+            "Client::Client<\(symbol.inputPath(owner: owner)), \(symbol.output.trimmedDescription), \(failure(of: symbol))>"
         }
     }
 }

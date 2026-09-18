@@ -26,6 +26,7 @@ let package = Package(
             branch: "main"
         ),
         .package(url: "https://github.com/swift-atoms/swift-operation.git", branch: "main"),
+        .package(url: "https://github.com/swift-atoms/swift-product.git", branch: "main"),
         .package(url: "https://github.com/swift-molecules/swift-interface.git", branch: "main"),
         .package(url: "https://github.com/swiftlang/swift-syntax.git", "603.0.2"..<"604.0.0"),
     ],
@@ -47,6 +48,7 @@ let package = Package(
             name: "Client Macro Core",
             dependencies: [
                 .product(name: "Interface Macro Core", package: "swift-interface"),
+                .product(name: "Operation Macro Core", package: "swift-operation"),
                 .product(name: "Product Macro Core", package: "swift-product"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
