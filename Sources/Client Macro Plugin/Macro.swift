@@ -28,9 +28,9 @@ public struct Macro: PeerMacro {
         let name = spelling.first == "`" && spelling.last == "`"
             ? String(spelling.dropFirst().dropLast())
             : spelling
-        guard name == "Protocol", let owner else {
+        guard name == "Protocol" || name == "Interface", let owner else {
             throw MacroExpansionErrorMessage(
-                "@Client requires a semantic protocol named `Protocol` nested in its domain namespace."
+                "@Client requires the interface's semantic protocol (`Interface` or `Protocol`) nested in its owner."
             )
         }
         let signature = Interface.Analysis(declaration: declaration, owner: owner)

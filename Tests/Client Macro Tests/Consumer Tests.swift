@@ -2,8 +2,9 @@ import Client_Macro
 import Interface_Macro
 import Testing
 
-private enum Greeting {
-    struct Name: Equatable {
+@Interface
+struct Greeting: Greeting.`Protocol` {
+    struct Name: Hashable {
         var value: String
     }
 
@@ -11,15 +12,15 @@ private enum Greeting {
         var value: String
     }
 
-    @Interface
     @Client
     protocol `Protocol` {
         func greet(_ name: Name) async -> Message
     }
 }
 
-private enum Counter {
-    struct Limit {
+@Interface
+struct Counter: Counter.`Protocol` {
+    struct Limit: Hashable {
         var value: Int
     }
 
@@ -31,7 +32,6 @@ private enum Counter {
         case exceeded
     }
 
-    @Interface
     @Client
     protocol `Protocol` {
         func increment(limit: Limit) async throws(Error) -> Value
@@ -39,8 +39,8 @@ private enum Counter {
     }
 }
 
-private enum Example {
-    @Interface
+@Interface
+struct Example: Example.`Protocol` {
     @Client
     protocol `Protocol` {
         associatedtype Greeting: Client_Macro_Tests::Greeting.`Protocol`
@@ -61,8 +61,8 @@ private struct `Consumer Tests` {
     @Test
     func `a leaf client lifts every operation failure into the external coproduct`() async throws {
         let client = Greeting.Client<Transport>(
-            greet: .init { name throws(Either<Transport, Never>) in
-                .init(value: "Hello, \(name.value)!")
+            greet: .init { request throws(Either<Transport, Never>) in
+                .init(value: "Hello, \(request.name.value)!")
             }
         )
 
@@ -72,9 +72,9 @@ private struct `Consumer Tests` {
     @Test
     func `a leaf client preserves labels and the domain refusal branch`() async {
         let client = Counter.Client<Transport>(
-            increment: .init { limit throws(Either<Transport, Counter.Error>) in
-                guard limit.value < 10 else { throw .right(.exceeded) }
-                return .init(value: limit.value + 1)
+            increment: .init { request throws(Either<Transport, Counter.Error>) in
+                guard request.limit.value < 10 else { throw .right(.exceeded) }
+                return .init(value: request.limit.value + 1)
             },
             reset: .init { _ throws(Either<Transport, Never>) in }
         )
@@ -87,7 +87,7 @@ private struct `Consumer Tests` {
     @Test
     func `a root client composes child clients over one external failure`() async throws {
         let client = Example.Client<Transport>(
-            greeting: .init(greet: .init { name throws(Either<Transport, Never>) in .init(value: "Hi \(name.value)") }),
+            greeting: .init(greet: .init { request throws(Either<Transport, Never>) in .init(value: "Hi \(request.name.value)") }),
             counter: .init(
                 increment: .init { _ throws(Either<Transport, Counter.Error>) in throw .left(.unreachable) },
                 reset: .init { _ throws(Either<Transport, Never>) in }

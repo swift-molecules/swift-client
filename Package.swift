@@ -47,6 +47,7 @@ let package = Package(
             name: "Client Macro Core",
             dependencies: [
                 .product(name: "Interface Macro Core", package: "swift-interface"),
+                .product(name: "Product Macro Core", package: "swift-product"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
             ]

@@ -3,6 +3,9 @@ public import Interface_Macro_Core
 import Product_Macro_Core
 import SwiftSyntaxBuilder
 
+// A client is the interface's arrows lifted over an external failure: every operation takes the same
+// `Request` the interface is called with (its symbol's `Input`) and fails with `Either<External, Failure>`.
+// The names come from the interface's naming table; nothing is re-derived here.
 extension Client {
     public enum Derivation {
         public static func peers(of signature: Interface.Analysis) -> [DeclSyntax] {
@@ -11,26 +14,29 @@ extension Client {
         }
 
         private static func client(of signature: Interface.Analysis, access: String) -> DeclSyntax {
-            let storedArrows = signature.coordinates.map { coordinate in
-                "    private let _\(coordinate.name.text): \(arrow(of: coordinate))"
+            let owner = signature.owner.trimmedDescription
+            let operations = Interface.Derivation.operations(of: signature)
+            let storedArrows = operations.map { operation in
+                "    private let _\(operation.caseName): \(arrow(of: operation, owner: owner))"
             }
             let storedChildren = signature.children.map { child in
                 "    \(access)let \(child.name.text): \(child.domain.trimmedDescription).Client<External>"
             }
-            let parameters = signature.coordinates.map { coordinate in
-                "\(coordinate.name.text): \(arrow(of: coordinate))"
+            let parameters = operations.map { operation in
+                "\(operation.caseName): \(arrow(of: operation, owner: owner))"
             } + signature.children.map { child in
                 "\(child.name.text): \(child.domain.trimmedDescription).Client<External>"
             }
-            let assignments = signature.coordinates.map { coordinate in
-                "        self._\(coordinate.name.text) = \(coordinate.name.text)"
+            let assignments = operations.map { operation in
+                "        self._\(operation.caseName) = \(operation.caseName)"
             } + signature.children.map { child in
                 "        self.\(child.name.text) = \(child.name.text)"
             }
-            let forwarding = signature.coordinates.map { coordinate in
-                """
-                    \(access)func \(coordinate.name.text)\(coordinate.declaration.signature.parameterClause.trimmedDescription) async throws(\(failure(of: coordinate))) -> \(coordinate.output.trimmedDescription) {
-                        try await self._\(coordinate.name.text)(\(coordinate.inputExpression.trimmedDescription))
+            let forwarding = operations.map { operation in
+                let coordinate = operation.coordinate
+                return """
+                    \(access)func \(operation.name)\(coordinate.declaration.signature.parameterClause.trimmedDescription) async throws(\(failure(of: operation))) -> \(operation.output) {
+                        try await self._\(operation.caseName)(\(operation.requestPath(owner: owner))(\(operation.construction)))
                     }
                 """
             }
@@ -48,12 +54,12 @@ extension Client {
                 """)
         }
 
-        private static func failure(of coordinate: Interface.Analysis.Coordinate) -> String {
-            "Either<External, \(coordinate.failure.trimmedDescription)>"
+        private static func failure(of operation: Interface.Derivation.Operation) -> String {
+            "Either<External, \(operation.coordinate.failure.trimmedDescription)>"
         }
 
-        private static func arrow(of coordinate: Interface.Analysis.Coordinate) -> String {
-            "Client::Client<\(coordinate.input.trimmedDescription), \(coordinate.output.trimmedDescription), \(failure(of: coordinate))>"
+        private static func arrow(of operation: Interface.Derivation.Operation, owner: String) -> String {
+            "Client::Client<\(operation.requestPath(owner: owner)), \(operation.output), \(failure(of: operation))>"
         }
     }
 }
