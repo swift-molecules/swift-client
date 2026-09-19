@@ -1,6 +1,6 @@
 public import Either
 
-extension Client {
+extension Client where Input: ~Copyable, Output: ~Copyable {
 
     public func collapsed<External: Swift.Error>() -> Client<Input, Output, External>
     where Failure == Either<External, Swift.Never> {

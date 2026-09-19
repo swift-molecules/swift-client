@@ -18,7 +18,6 @@ let package = Package(
             targets: ["Client"]
         ),
         .library(name: "Client Macro", targets: ["Client Macro"]),
-        .library(name: "Client Macro Core", targets: ["Client Macro Core"]),
     ],
     dependencies: [
         .package(
@@ -31,6 +30,10 @@ let package = Package(
         .package(url: "https://github.com/swiftlang/swift-syntax.git", "603.0.2"..<"604.0.0"),
     ],
     targets: [
+        .target(name: "Client Consumer Fixtures", dependencies: [
+            "Client Macro",
+            .product(name: "Interface Macro", package: "swift-interface"),
+        ]),
         .target(
             name: "Client",
             dependencies: [
@@ -47,9 +50,9 @@ let package = Package(
         .target(
             name: "Client Macro Core",
             dependencies: [
-                .product(name: "Interface Macro Core", package: "swift-interface"),
-                .product(name: "Operation Macro Core", package: "swift-operation"),
-                .product(name: "Product Macro Core", package: "swift-product"),
+                .product(name: "Interface Syntax", package: "swift-interface"),
+                .product(name: "Operation Syntax", package: "swift-operation"),
+                .product(name: "Product Syntax", package: "swift-product"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
             ]
@@ -66,6 +69,7 @@ let package = Package(
         .target(
             name: "Client Macro",
             dependencies: [
+                .product(name: "Product Macro", package: "swift-product"),
                 "Client Macro Plugin",
                 "Client",
                 .product(name: "Either", package: "swift-either"),
@@ -75,6 +79,7 @@ let package = Package(
         .testTarget(
             name: "Client Macro Tests",
             dependencies: [
+                "Client Consumer Fixtures",
                 "Client Macro",
                 "Client",
                 .product(name: "Either", package: "swift-either"),
@@ -96,4 +101,9 @@ for target in package.targets where ![.system, .binary, .plugin, .macro].contain
         .enableExperimentalFeature("Lifetimes"),
         .enableUpcomingFeature("InferIsolatedConformances"),
     ]
+}
+
+// Consumer compilation must reject visibility regressions, even when other packages suppress warnings.
+for target in package.targets where target.type == .test || target.name.hasSuffix("Consumer Fixtures") {
+    target.swiftSettings = (target.swiftSettings ?? []) + [.treatAllWarnings(as: .error)]
 }

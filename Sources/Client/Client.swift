@@ -1,9 +1,9 @@
-public struct Client<Input, Output, Failure: Swift.Error> {
+public struct Client<Input: ~Copyable, Output: ~Copyable, Failure: Swift.Error> {
 
-    public let run: (Input) async throws(Failure) -> Output
+    public let run: (consuming Input) async throws(Failure) -> Output
 
     public init(
-        run: @escaping (Input) async throws(Failure) -> Output
+        run: @escaping (consuming Input) async throws(Failure) -> Output
     ) {
         self.run = run
     }

@@ -1,7 +1,7 @@
-extension Client {
+extension Client where Input: ~Copyable, Output: ~Copyable {
 
     @inlinable
-    public func callAsFunction(_ input: Input) async throws(Failure) -> Output {
+    public func callAsFunction(_ input: consuming Input) async throws(Failure) -> Output {
         try await run(input)
     }
 }

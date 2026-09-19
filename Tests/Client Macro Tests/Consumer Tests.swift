@@ -64,42 +64,42 @@ private struct `Consumer Tests` {
     @Test
     func `a leaf client lifts every operation failure into the external coproduct`() async throws {
         let client = Greeting.Client<Transport>(
-            greet: .init { request throws(Either<Transport, Never>) in
+            greet: { request throws(Either<Transport, Never>) in
                 .init(value: "Hello, \(request.name.value)!")
             }
         )
 
-        #expect(try await client.greet(.init(value: "Blob")) == .init(value: "Hello, Blob!"))
+        #expect(try await client.greet(.init(.init(value: "Blob"))) == .init(value: "Hello, Blob!"))
     }
 
     @Test
     func `a leaf client preserves labels and the domain refusal branch`() async {
         let client = Counter.Client<Transport>(
-            increment: .init { request throws(Either<Transport, Counter.Error>) in
+            increment: { request throws(Either<Transport, Counter.Error>) in
                 guard request.limit.value < 10 else { throw .right(.exceeded) }
                 return .init(value: request.limit.value + 1)
             },
-            reset: .init { _ throws(Either<Transport, Never>) in }
+            reset: { _ throws(Either<Transport, Never>) in }
         )
 
         await #expect(throws: Either<Transport, Counter.Error>.right(.exceeded)) {
-            try await client.increment(limit: .init(value: 10))
+            try await client.increment(.init(limit: .init(value: 10)))
         }
     }
 
     @Test
     func `a root client composes child clients over one external failure`() async throws {
         let client = Example.Client<Transport>(
-            greeting: .init(greet: .init { request throws(Either<Transport, Never>) in .init(value: "Hi \(request.name.value)") }),
+            greeting: .init(greet: { request throws(Either<Transport, Never>) in .init(value: "Hi \(request.name.value)") }),
             counter: .init(
-                increment: .init { _ throws(Either<Transport, Counter.Error>) in throw .left(.unreachable) },
-                reset: .init { _ throws(Either<Transport, Never>) in }
+                increment: { _ throws(Either<Transport, Counter.Error>) in throw .left(.unreachable) },
+                reset: { _ throws(Either<Transport, Never>) in }
             )
         )
 
-        #expect(try await client.greeting.greet(.init(value: "Blob")) == .init(value: "Hi Blob"))
+        #expect(try await client.greeting.greet(.init(.init(value: "Blob"))) == .init(value: "Hi Blob"))
         await #expect(throws: Either<Transport, Counter.Error>.left(.unreachable)) {
-            try await client.counter.increment(limit: .init(value: 1))
+            try await client.counter.increment(.init(limit: .init(value: 1)))
         }
     }
 }

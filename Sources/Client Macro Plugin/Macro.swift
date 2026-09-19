@@ -1,5 +1,5 @@
 import Client_Macro_Core
-import Interface_Macro_Core
+import Interface_Syntax
 import SwiftSyntax
 import SwiftSyntaxMacros
 
