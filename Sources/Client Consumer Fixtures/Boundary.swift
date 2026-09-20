@@ -8,3 +8,6 @@ public struct PublicGreeting: PublicGreeting.Interface {
         func greet(_ name: String) -> String
     }
 }
+
+// Capabilities are declared using Swift protocols at the point of use.
+extension PublicGreeting.Greet.Input: Hashable, Sendable {}

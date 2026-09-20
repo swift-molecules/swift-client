@@ -103,3 +103,8 @@ private struct `Consumer Tests` {
         }
     }
 }
+
+// Capabilities are declared using Swift protocols at the point of use.
+extension Greeting.Greet.Input: Hashable, Sendable {}
+extension Counter.Increment.Input: Hashable, Sendable {}
+extension Counter.Reset.Input: Hashable, Sendable {}
