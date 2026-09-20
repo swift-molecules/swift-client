@@ -12,7 +12,7 @@ struct Greeting: Greeting.`Protocol` {
         var value: String
     }
 
-    @Operations
+    @Operations(composed: true)
     @Client
     protocol `Protocol` {
         func greet(_ name: Name) async -> Message
@@ -33,7 +33,7 @@ struct Counter: Counter.`Protocol` {
         case exceeded
     }
 
-    @Operations
+    @Operations(composed: true)
     @Client
     protocol `Protocol` {
         func increment(limit: Limit) async throws(Error) -> Value
@@ -43,7 +43,7 @@ struct Counter: Counter.`Protocol` {
 
 @Interface
 struct Example: Example.`Protocol` {
-    @Operations
+    @Operations(composed: true)
     @Client
     protocol `Protocol` {
         associatedtype Greeting: Client_Macro_Tests::Greeting.`Protocol`
